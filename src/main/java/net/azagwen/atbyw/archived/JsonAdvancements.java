@@ -2,18 +2,7 @@ package net.azagwen.atbyw.archived;
 
 import com.google.common.collect.Maps;
 import com.google.gson.*;
-import net.azagwen.atbyw.datagen.RecipeRegistry;
 import net.azagwen.atbyw.util.AtbywUtils;
-import net.minecraft.advancement.Advancement;
-import net.minecraft.advancement.AdvancementRewards;
-import net.minecraft.advancement.CriterionMerger;
-import net.minecraft.advancement.criterion.InventoryChangedCriterion;
-import net.minecraft.advancement.criterion.RecipeUnlockedCriterion;
-import net.minecraft.predicate.NumberRange;
-import net.minecraft.predicate.entity.EntityPredicate;
-import net.minecraft.predicate.item.ItemPredicate;
-import net.minecraft.recipe.Ingredient;
-import net.minecraft.recipe.Recipe;
 import net.minecraft.util.Identifier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -187,7 +176,6 @@ public class JsonAdvancements {
 
     public static void unlockAllRecipes(Map<Identifier, JsonElement> map) {
         var recipeMap = Maps.<Identifier, JsonElement>newConcurrentMap();
-        RecipeRegistry.inject(recipeMap);
         recipeMap.forEach((id, element) -> translateRecipes(map, id, element));
     }
 

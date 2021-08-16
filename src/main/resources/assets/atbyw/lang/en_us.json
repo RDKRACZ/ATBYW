@@ -2,6 +2,14 @@
   "_comment": "Blocks",
   "block.atbyw.dev_block": "Aza Block",
 
+  "block.atbyw.raw_cactus_planks": "Raw Cactus Planks",
+  "block.atbyw.cactus_planks": "Cactus Planks",
+  "block.atbyw.cactus_stairs": "Cactus Stairs",
+  "block.atbyw.cactus_slab": "Cactus Slab",
+  "block.atbyw.cactus_fence": "Cactus Fence",
+  "block.atbyw.cactus_ladder": "Cactus Ladder",
+  "block.atbyw.cactus_sign": "Cactus Sign",
+
   "block.atbyw.tinting_table": "Tinting Table",
 
   "block.atbyw.redstone_pipe": "Redstone Pipe",
@@ -649,8 +657,7 @@
   "block.atbyw.bat_statue.cannot_be_waxed": "Bat statue requires at least %d Honeycombs to be waxed.",
 
   "container.tinting": "Tinting Table",
-  "container.tinting_table_mode.hex": "Switch modes",
-  "container.tinting_table_mode.rgb": "Switch modes",
+  "container.tinting_table_mode": "Switch modes",
 
   "_comment": "Unused / Old / Kept as Examples",
   "block.atbyw. statue.not_ready": "%1$s is not ready yet. (%2$s%% moss coverage)"

@@ -1,26 +1,32 @@
 package net.azagwen.atbyw.block;
 
 import com.google.common.collect.Sets;
-import net.azagwen.atbyw.NewRedstoneCrossPathBlock;
 import net.azagwen.atbyw.block.slabs.*;
 import net.azagwen.atbyw.block.stairs.*;
 import net.azagwen.atbyw.block.state.AtbywProperties;
+import net.azagwen.atbyw.block.state.AtbywSignType;
 import net.azagwen.atbyw.block.statues.*;
+import net.azagwen.atbyw.item.CanvasBlockItem;
 import net.azagwen.atbyw.main.AtbywMain;
-import net.azagwen.atbyw.util.naming.ColorNames;
+import net.azagwen.atbyw.mod_interaction.block.AtbywModInteractionBlocks;
+import net.azagwen.atbyw.util.AtbywUtils;
 import net.azagwen.atbyw.util.naming.FlowerNames;
 import net.azagwen.atbyw.util.naming.WoodNames;
 import net.fabricmc.fabric.api.object.builder.v1.block.FabricBlockSettings;
 import net.fabricmc.fabric.api.tool.attribute.v1.FabricToolTags;
 import net.minecraft.block.*;
 import net.minecraft.entity.EntityType;
+import net.minecraft.item.Item;
+import net.minecraft.item.SignItem;
 import net.minecraft.sound.BlockSoundGroup;
 import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.state.property.IntProperty;
 import net.minecraft.state.property.Properties;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.registry.Registry;
 import net.minecraft.world.BlockView;
 
+import java.util.ArrayList;
 import java.util.Set;
 import java.util.function.ToIntFunction;
 
@@ -39,7 +45,7 @@ public class AtbywBlocks {
     //TODO: STATUES Add signing fish function.
     //TODO: STATUES Make slime statues combine-able.
     //TODO: Add thin ice (world gen when ready)
-    //TODO: Add Railing Blocks (catwalk handles) update: WIP
+    //TODO: Add Railing Blocks (catwalk handles) || update: WIP
     //TODO: Add regular ice bricks that melt
     //TODO: Idea > "dried" coral blocks that keep their colors
     //TODO: Add chairs ?
@@ -51,6 +57,22 @@ public class AtbywBlocks {
     public static Boolean never(BlockState state, BlockView world, BlockPos pos, EntityType<?> type) { return false; }
     public static boolean always(BlockState state, BlockView world, BlockPos pos) { return true; }
     public static boolean never(BlockState state, BlockView world, BlockPos pos) { return false; }
+
+    public static void registerCanvasBlock(ArrayList<Item> itemTab, String name, Block block) {
+        Registry.register(Registry.BLOCK, AtbywMain.id(name), block);
+        Registry.register(Registry.ITEM, AtbywMain.id(name), new CanvasBlockItem(block, new Item.Settings()));
+
+        itemTab.add(block.asItem());
+    }
+
+    public static void registerSign(ArrayList<Item> itemTab, Block standingSign, Block wallSign) {
+        var type = ((AtbywSignBlock) standingSign).getType().getName();
+        Registry.register(Registry.BLOCK, AtbywMain.id(type + "_sign"), standingSign);
+        Registry.register(Registry.BLOCK, AtbywMain.id(type + "_wall_sign"), wallSign);
+        Registry.register(Registry.ITEM, AtbywMain.id(type + "_sign"), new SignItem(new Item.Settings(), standingSign, wallSign));
+
+        itemTab.add(standingSign.asItem());
+    }
 
     private static ToIntFunction<BlockState> lightLevelFromState(int litLevel, BooleanProperty isLit) {
         return (blockState) -> blockState.get(isLit) ? litLevel : 0;
@@ -82,7 +104,7 @@ public class AtbywBlocks {
         }
     }
 
-    private static CanvasBlock canvasBlock(boolean glowing) {
+    private static CanvasBlock createCanvasBlock(boolean glowing) {
         return new CanvasBlock(glowing, FabricBlockSettings.of(Material.WOOL).strength(0.5F).sounds(BlockSoundGroup.WOOL));
     }
 
@@ -451,7 +473,7 @@ public class AtbywBlocks {
     public static final Block NETHERITE_SPIKE_TRAP = new SpikeTrapBlock(NETHERITE_SPIKE_TRAP_SPIKES, 6.0F, FabricBlockSettings.of(Material.PISTON).strength(1.5F).requiresTool().breakByTool(FabricToolTags.PICKAXES).solidBlock(AtbywBlocks::never));
 
     public static final Block TIMER_REPEATER = new TimerRepeaterBlock(FabricBlockSettings.copyOf(Blocks.REPEATER));
-    public static final Block REDSTONE_CROSS_PATH = new NewRedstoneCrossPathBlock(FabricBlockSettings.copyOf(Blocks.REPEATER));
+    public static final Block REDSTONE_CROSS_PATH = new RedstoneCrossPathBlock(FabricBlockSettings.copyOf(Blocks.REPEATER));
 
     public static final Block ACACIA_RAILING = new RailingBlock(AtbywMain.id("acacia_railing"), FabricBlockSettings.copyOf(Blocks.ACACIA_FENCE));
 
@@ -493,13 +515,22 @@ public class AtbywBlocks {
     public static final Block STRIPPED_CRIMSON_STEM_SLAB = new PillarSlabBlock(logSettings(Blocks.STRIPPED_CRIMSON_STEM));
     public static final Block STRIPPED_WARPED_STEM_SLAB = new PillarSlabBlock(logSettings(Blocks.STRIPPED_WARPED_STEM));
 
-    public static final Block CANVAS_BLOCK = canvasBlock(false);
-    public static final Block GLOWING_CANVAS_BLOCK = canvasBlock(true);
+    public static final Block CANVAS_BLOCK = createCanvasBlock(false);
+    public static final Block GLOWING_CANVAS_BLOCK = createCanvasBlock(true);
 
     public static final Block REDSTONE_PIPE = new RedstonePipeBlock(FabricBlockSettings.of(Material.METAL).sounds(BlockSoundGroup.COPPER));
     public static final Block REDSTONE_PIPE_REPEATER = new RedstonePipeRepeaterBlock(FabricBlockSettings.of(Material.METAL).sounds(BlockSoundGroup.COPPER));
 
-    public static final Block TINTING_TABLE = new TintingTableBlock(FabricBlockSettings.of(Material.NETHER_WOOD).sounds(BlockSoundGroup.WOOD));
+    public static final Block TINTING_TABLE = new TintingTableBlock(FabricBlockSettings.copyOf(Blocks.IRON_BLOCK).requiresTool().breakByTool(FabricToolTags.PICKAXES).sounds(BlockSoundGroup.COPPER));
+
+    public static final Block RAW_CACTUS_PLANKS = new Block(FabricBlockSettings.copyOf(Blocks.OAK_PLANKS).breakByTool(FabricToolTags.AXES));
+    public static final Block CACTUS_PLANKS = new Block(FabricBlockSettings.copyOf(Blocks.OAK_PLANKS).breakByTool(FabricToolTags.AXES));
+    public static final Block CACTUS_PLANKS_SLAB = new SlabBlock(FabricBlockSettings.copyOf(Blocks.OAK_SLAB).breakByTool(FabricToolTags.AXES));
+    public static final Block CACTUS_PLANKS_STAIRS = new StairsBlockSubClass(CACTUS_PLANKS, FabricBlockSettings.copyOf(Blocks.OAK_STAIRS).breakByTool(FabricToolTags.AXES));
+    public static final Block CACTUS_LADDER = new LadderBlockSubClass(FabricBlockSettings.copyOf(Blocks.LADDER).breakByTool(FabricToolTags.AXES));
+    public static final Block CACTUS_FENCE = new FenceBlock(FabricBlockSettings.copyOf(Blocks.OAK_DOOR).breakByTool(FabricToolTags.AXES));
+    public static final Block CACTUS_SIGN = new AtbywSignBlock(AtbywSignType.CACTUS, FabricBlockSettings.copyOf(Blocks.OAK_SIGN).breakByTool(FabricToolTags.AXES));
+    public static final Block CACTUS_WALL_SIGN = new AtbywWallSignBlock(AtbywSignType.CACTUS, FabricBlockSettings.copyOf(Blocks.OAK_WALL_SIGN).breakByTool(FabricToolTags.AXES));
 
     public static void init() {
 
@@ -524,15 +555,16 @@ public class AtbywBlocks {
         registerBlock(false, BLOCKS_TAB, "granite_tiles", GRANITE_TILES);
         registerBlock(false, BLOCKS_TAB, "diorite_bricks", DIORITE_BRICKS);
         registerBlock(false, BLOCKS_TAB, "andesite_bricks", ANDESITE_BRICKS);
-
         registerBlock(false, BLOCKS_TAB, "granite_tiles_stairs", GRANITE_TILES_STAIRS);
         registerBlock(false, BLOCKS_TAB, "diorite_bricks_stairs", DIORITE_BRICKS_STAIRS);
         registerBlock(false, BLOCKS_TAB, "andesite_bricks_stairs", ANDESITE_BRICKS_STAIRS);
-
         registerBlock(false, BLOCKS_TAB, "granite_tiles_slab", GRANITE_TILES_SLAB);
         registerBlock(false, BLOCKS_TAB, "diorite_bricks_slab", DIORITE_BRICKS_SLAB);
         registerBlock(false, BLOCKS_TAB, "andesite_bricks_slab", ANDESITE_BRICKS_SLAB);
-
+        registerBlock(false, BLOCKS_TAB, "raw_cactus_planks", RAW_CACTUS_PLANKS);
+        registerBlock(false, BLOCKS_TAB, "cactus_planks", CACTUS_PLANKS);
+        registerBlock(false, BLOCKS_TAB, "cactus_slab", CACTUS_PLANKS_SLAB);
+        registerBlock(false, BLOCKS_TAB, "cactus_stairs", CACTUS_PLANKS_STAIRS);
         registerBlock(false, BLOCKS_TAB, "grass_block_stairs", GRASS_BLOCK_STAIRS);
         registerBlock(false, BLOCKS_TAB, "dirt_stairs", DIRT_STAIRS);
         registerBlock(false, BLOCKS_TAB, "coarse_dirt_stairs", COARSE_DIRT_STAIRS);
@@ -546,7 +578,6 @@ public class AtbywBlocks {
         registerBlock(false, BLOCKS_TAB, "sand_stairs", SAND_STAIRS);
         registerBlock(false, BLOCKS_TAB, "red_sand_stairs", RED_SAND_STAIRS);
         registerBlock(false, BLOCKS_TAB, "gravel_stairs", GRAVEL_STAIRS);
-
         registerBlock(false, BLOCKS_TAB, "grass_block_slab", GRASS_BLOCK_SLAB);
         registerBlock(false, BLOCKS_TAB, "dirt_slab", DIRT_SLAB);
         registerBlock(false, BLOCKS_TAB, "coarse_dirt_slab", COARSE_DIRT_SLAB);
@@ -560,37 +591,27 @@ public class AtbywBlocks {
         registerBlock(false, BLOCKS_TAB, "sand_slab", SAND_SLAB);
         registerBlock(false, BLOCKS_TAB, "red_sand_slab", RED_SAND_SLAB);
         registerBlock(false, BLOCKS_TAB, "gravel_slab", GRAVEL_SLAB);
-
-
         registerBlocks(false, BLOCKS_TAB, "log_stairs", WoodNames.getNamesOverworld(), OAK_LOG_STAIRS, SPRUCE_LOG_STAIRS, BIRCH_LOG_STAIRS, JUNGLE_LOG_STAIRS, ACACIA_LOG_STAIRS, DARK_OAK_LOG_STAIRS);
         registerBlocks(false, BLOCKS_TAB, "stem_stairs", WoodNames.getNamesNether(), CRIMSON_STEM_STAIRS, WARPED_STEM_STAIRS);
         registerBlocks(false, BLOCKS_TAB, "stripped", "log_stairs", WoodNames.getNamesOverworld(), STRIPPED_OAK_LOG_STAIRS, STRIPPED_SPRUCE_LOG_STAIRS, STRIPPED_BIRCH_LOG_STAIRS, STRIPPED_JUNGLE_LOG_STAIRS, STRIPPED_ACACIA_LOG_STAIRS, STRIPPED_DARK_OAK_LOG_STAIRS);
         registerBlocks(false, BLOCKS_TAB, "stripped", "stem_stairs", WoodNames.getNamesNether(), STRIPPED_CRIMSON_STEM_STAIRS, STRIPPED_WARPED_STEM_STAIRS);
-
         registerBlocks(false, BLOCKS_TAB, "log_slab", WoodNames.getNamesOverworld(), OAK_LOG_SLAB, SPRUCE_LOG_SLAB, BIRCH_LOG_SLAB, JUNGLE_LOG_SLAB, ACACIA_LOG_SLAB, DARK_OAK_LOG_SLAB);
         registerBlocks(false, BLOCKS_TAB, "stem_slab", WoodNames.getNamesNether(), CRIMSON_STEM_SLAB, WARPED_STEM_SLAB);
         registerBlocks(false, BLOCKS_TAB, "stripped", "log_slab", WoodNames.getNamesOverworld(), STRIPPED_OAK_LOG_SLAB, STRIPPED_SPRUCE_LOG_SLAB, STRIPPED_BIRCH_LOG_SLAB, STRIPPED_JUNGLE_LOG_SLAB, STRIPPED_ACACIA_LOG_SLAB, STRIPPED_DARK_OAK_LOG_SLAB);
         registerBlocks(false, BLOCKS_TAB, "stripped", "stem_slab", WoodNames.getNamesNether(), STRIPPED_CRIMSON_STEM_SLAB, STRIPPED_WARPED_STEM_SLAB);
-
         registerBlock(false, BLOCKS_TAB, "shattered_glass", SHATTERED_GLASS);
-
         registerBlock(false, BLOCKS_TAB, "soul_jack_o_lantern", SOUL_JACK_O_LANTERN);
-
         registerBlocks(false, BLOCKS_TAB, "bookshelf", WoodNames.getNamesNoOak(), SPRUCE_BOOKSHELF, BIRCH_BOOKSHELF, JUNGLE_BOOKSHELF, ACACIA_BOOKSHELF, DARK_OAK_BOOKSHELF, CRIMSON_BOOKSHELF, WARPED_BOOKSHELF);
-
         registerBlock(false, BLOCKS_TAB, "purpur_tiles", PURPUR_TILES);
         registerBlock(false, BLOCKS_TAB, "chiseled_purpur_block", CHISELED_PURPUR_BLOCK);
         registerBlock(false, BLOCKS_TAB, "cut_purpur_block", CUT_PURPUR_BLOCK);
         registerBlock(false, BLOCKS_TAB, "smooth_purpur_block", SMOOTH_PURPUR_BLOCK);
-
         registerBlock(false, BLOCKS_TAB, "purpur_tiles_stairs", PURPUR_TILES_STAIRS);
         registerBlock(false, BLOCKS_TAB, "cut_purpur_stairs", CUT_PURPUR_STAIRS);
         registerBlock(false, BLOCKS_TAB, "smooth_purpur_stairs", SMOOTH_PURPUR_STAIRS);
-
         registerBlock(false, BLOCKS_TAB, "purpur_tiles_slab", PURPUR_TILES_SLAB);
         registerBlock(false, BLOCKS_TAB, "cut_purpur_slab", CUT_PURPUR_SLAB);
         registerBlock(false, BLOCKS_TAB, "smooth_purpur_slab", SMOOTH_PURPUR_SLAB);
-
         registerBlock(false, BLOCKS_TAB, "compacted_snow_block", COMPACTED_SNOW_BLOCK);
         registerBlock(false, BLOCKS_TAB, "compacted_snow_bricks", COMPACTED_SNOW_BRICKS);
         registerBlock(false, BLOCKS_TAB, "chiseled_compacted_snow_bricks", CHISELED_COMPACTED_SNOW_BRICKS);
@@ -598,50 +619,46 @@ public class AtbywBlocks {
         registerBlock(false, BLOCKS_TAB, "chiseled_packed_ice_bricks", CHISELED_PACKED_ICE_BRICKS);
         registerBlock(false, BLOCKS_TAB, "blue_ice_bricks", BLUE_ICE_BRICKS);
         registerBlock(false, BLOCKS_TAB, "chiseled_blue_ice_bricks", CHISELED_BLUE_ICE_BRICKS);
-
         registerBlock(false, BLOCKS_TAB, "compacted_snow_block_stairs", COMPACTED_SNOW_BLOCK_STAIRS);
         registerBlock(false, BLOCKS_TAB, "compacted_snow_bricks_stairs", COMPACTED_SNOW_BRICKS_STAIRS);
         registerBlock(false, BLOCKS_TAB, "packed_ice_stairs", PACKED_ICE_STAIRS);
         registerBlock(false, BLOCKS_TAB, "blue_ice_stairs", BLUE_ICE_STAIRS);
         registerBlock(false, BLOCKS_TAB, "packed_ice_bricks_stairs", PACKED_ICE_BRICKS_STAIRS);
         registerBlock(false, BLOCKS_TAB, "blue_ice_bricks_stairs", BLUE_ICE_BRICKS_STAIRS);
-
         registerBlock(false, BLOCKS_TAB, "compacted_snow_block_slab", COMPACTED_SNOW_BLOCK_SLAB);
         registerBlock(false, BLOCKS_TAB, "compacted_snow_bricks_slab", COMPACTED_SNOW_BRICKS_SLAB);
         registerBlock(false, BLOCKS_TAB, "packed_ice_slab", PACKED_ICE_SLAB);
         registerBlock(false, BLOCKS_TAB, "blue_ice_slab", BLUE_ICE_SLAB);
         registerBlock(false, BLOCKS_TAB, "packed_ice_bricks_slab", PACKED_ICE_BRICKS_SLAB);
         registerBlock(false, BLOCKS_TAB, "blue_ice_bricks_slab", BLUE_ICE_BRICKS_SLAB);
-
-        registerBlocks(false, BLOCKS_TAB, "stained_shattered_glass", ColorNames.getNames(), WHITE_STAINED_SHATTERED_GLASS, ORANGE_STAINED_SHATTERED_GLASS, MAGENTA_STAINED_SHATTERED_GLASS, LIGHT_BLUE_STAINED_SHATTERED_GLASS, YELLOW_STAINED_SHATTERED_GLASS, LIME_STAINED_SHATTERED_GLASS, PINK_STAINED_SHATTERED_GLASS, GRAY_STAINED_SHATTERED_GLASS, LIGHT_GRAY_STAINED_SHATTERED_GLASS, CYAN_STAINED_SHATTERED_GLASS, PURPLE_STAINED_SHATTERED_GLASS, BLUE_STAINED_SHATTERED_GLASS, BROWN_STAINED_SHATTERED_GLASS, GREEN_STAINED_SHATTERED_GLASS, RED_STAINED_SHATTERED_GLASS, BLACK_STAINED_SHATTERED_GLASS);
-
+        registerBlocks(false, BLOCKS_TAB, "stained_shattered_glass", AtbywUtils.dyeColorNames(), WHITE_STAINED_SHATTERED_GLASS, ORANGE_STAINED_SHATTERED_GLASS, MAGENTA_STAINED_SHATTERED_GLASS, LIGHT_BLUE_STAINED_SHATTERED_GLASS, YELLOW_STAINED_SHATTERED_GLASS, LIME_STAINED_SHATTERED_GLASS, PINK_STAINED_SHATTERED_GLASS, GRAY_STAINED_SHATTERED_GLASS, LIGHT_GRAY_STAINED_SHATTERED_GLASS, CYAN_STAINED_SHATTERED_GLASS, PURPLE_STAINED_SHATTERED_GLASS, BLUE_STAINED_SHATTERED_GLASS, BROWN_STAINED_SHATTERED_GLASS, GREEN_STAINED_SHATTERED_GLASS, RED_STAINED_SHATTERED_GLASS, BLACK_STAINED_SHATTERED_GLASS);
         registerBlock(false, BLOCKS_TAB, "basalt_bricks", BASALT_BRICKS);
         registerBlock(false, BLOCKS_TAB, "basalt_pillar", BASALT_PILLAR);
-
         registerBlock( false, BLOCKS_TAB, "terracotta_stairs", TERRACOTTA_STAIRS);
-        registerBlocks(false, BLOCKS_TAB, "terracotta_stairs", ColorNames.getNames(), WHITE_TERRACOTTA_STAIRS, ORANGE_TERRACOTTA_STAIRS, MAGENTA_TERRACOTTA_STAIRS, LIGHT_BLUE_TERRACOTTA_STAIRS, YELLOW_TERRACOTTA_STAIRS, LIME_TERRACOTTA_STAIRS, PINK_TERRACOTTA_STAIRS, GRAY_TERRACOTTA_STAIRS, LIGHT_GRAY_TERRACOTTA_STAIRS, CYAN_TERRACOTTA_STAIRS, PURPLE_TERRACOTTA_STAIRS, BLUE_TERRACOTTA_STAIRS, BROWN_TERRACOTTA_STAIRS, GREEN_TERRACOTTA_STAIRS, RED_TERRACOTTA_STAIRS, BLACK_TERRACOTTA_STAIRS);
+        registerBlocks(false, BLOCKS_TAB, "terracotta_stairs", AtbywUtils.dyeColorNames(), WHITE_TERRACOTTA_STAIRS, ORANGE_TERRACOTTA_STAIRS, MAGENTA_TERRACOTTA_STAIRS, LIGHT_BLUE_TERRACOTTA_STAIRS, YELLOW_TERRACOTTA_STAIRS, LIME_TERRACOTTA_STAIRS, PINK_TERRACOTTA_STAIRS, GRAY_TERRACOTTA_STAIRS, LIGHT_GRAY_TERRACOTTA_STAIRS, CYAN_TERRACOTTA_STAIRS, PURPLE_TERRACOTTA_STAIRS, BLUE_TERRACOTTA_STAIRS, BROWN_TERRACOTTA_STAIRS, GREEN_TERRACOTTA_STAIRS, RED_TERRACOTTA_STAIRS, BLACK_TERRACOTTA_STAIRS);
         registerBlock( false, BLOCKS_TAB, "terracotta_slab", TERRACOTTA_SLAB);
-        registerBlocks(false, BLOCKS_TAB, "terracotta_slab", ColorNames.getNames(), WHITE_TERRACOTTA_SLAB, ORANGE_TERRACOTTA_SLAB, MAGENTA_TERRACOTTA_SLAB, LIGHT_BLUE_TERRACOTTA_SLAB, YELLOW_TERRACOTTA_SLAB, LIME_TERRACOTTA_SLAB, PINK_TERRACOTTA_SLAB, GRAY_TERRACOTTA_SLAB, LIGHT_GRAY_TERRACOTTA_SLAB, CYAN_TERRACOTTA_SLAB, PURPLE_TERRACOTTA_SLAB, BLUE_TERRACOTTA_SLAB, BROWN_TERRACOTTA_SLAB, GREEN_TERRACOTTA_SLAB, RED_TERRACOTTA_SLAB, BLACK_TERRACOTTA_SLAB);
+        registerBlocks(false, BLOCKS_TAB, "terracotta_slab", AtbywUtils.dyeColorNames(), WHITE_TERRACOTTA_SLAB, ORANGE_TERRACOTTA_SLAB, MAGENTA_TERRACOTTA_SLAB, LIGHT_BLUE_TERRACOTTA_SLAB, YELLOW_TERRACOTTA_SLAB, LIME_TERRACOTTA_SLAB, PINK_TERRACOTTA_SLAB, GRAY_TERRACOTTA_SLAB, LIGHT_GRAY_TERRACOTTA_SLAB, CYAN_TERRACOTTA_SLAB, PURPLE_TERRACOTTA_SLAB, BLUE_TERRACOTTA_SLAB, BROWN_TERRACOTTA_SLAB, GREEN_TERRACOTTA_SLAB, RED_TERRACOTTA_SLAB, BLACK_TERRACOTTA_SLAB);
         registerBlock( false, BLOCKS_TAB, "terracotta_bricks", TERRACOTTA_BRICKS);
-        registerBlocks(false, BLOCKS_TAB, "terracotta_bricks", ColorNames.getNames(), WHITE_TERRACOTTA_BRICKS, ORANGE_TERRACOTTA_BRICKS, MAGENTA_TERRACOTTA_BRICKS, LIGHT_BLUE_TERRACOTTA_BRICKS, YELLOW_TERRACOTTA_BRICKS, LIME_TERRACOTTA_BRICKS, PINK_TERRACOTTA_BRICKS, GRAY_TERRACOTTA_BRICKS, LIGHT_GRAY_TERRACOTTA_BRICKS, CYAN_TERRACOTTA_BRICKS, PURPLE_TERRACOTTA_BRICKS, BLUE_TERRACOTTA_BRICKS, BROWN_TERRACOTTA_BRICKS, GREEN_TERRACOTTA_BRICKS, RED_TERRACOTTA_BRICKS, BLACK_TERRACOTTA_BRICKS);
+        registerBlocks(false, BLOCKS_TAB, "terracotta_bricks", AtbywUtils.dyeColorNames(), WHITE_TERRACOTTA_BRICKS, ORANGE_TERRACOTTA_BRICKS, MAGENTA_TERRACOTTA_BRICKS, LIGHT_BLUE_TERRACOTTA_BRICKS, YELLOW_TERRACOTTA_BRICKS, LIME_TERRACOTTA_BRICKS, PINK_TERRACOTTA_BRICKS, GRAY_TERRACOTTA_BRICKS, LIGHT_GRAY_TERRACOTTA_BRICKS, CYAN_TERRACOTTA_BRICKS, PURPLE_TERRACOTTA_BRICKS, BLUE_TERRACOTTA_BRICKS, BROWN_TERRACOTTA_BRICKS, GREEN_TERRACOTTA_BRICKS, RED_TERRACOTTA_BRICKS, BLACK_TERRACOTTA_BRICKS);
         registerBlock( false, BLOCKS_TAB, "terracotta_bricks_stairs", TERRACOTTA_BRICKS_STAIRS);
-        registerBlocks(false, BLOCKS_TAB, "terracotta_bricks_stairs", ColorNames.getNames(), WHITE_TERRACOTTA_BRICKS_STAIRS, ORANGE_TERRACOTTA_BRICKS_STAIRS, MAGENTA_TERRACOTTA_BRICKS_STAIRS, LIGHT_BLUE_TERRACOTTA_BRICKS_STAIRS, YELLOW_TERRACOTTA_BRICKS_STAIRS, LIME_TERRACOTTA_BRICKS_STAIRS, PINK_TERRACOTTA_BRICKS_STAIRS, GRAY_TERRACOTTA_BRICKS_STAIRS, LIGHT_GRAY_TERRACOTTA_BRICKS_STAIRS, CYAN_TERRACOTTA_BRICKS_STAIRS, PURPLE_TERRACOTTA_BRICKS_STAIRS, BLUE_TERRACOTTA_BRICKS_STAIRS, BROWN_TERRACOTTA_BRICKS_STAIRS, GREEN_TERRACOTTA_BRICKS_STAIRS, RED_TERRACOTTA_BRICKS_STAIRS, BLACK_TERRACOTTA_BRICKS_STAIRS);
+        registerBlocks(false, BLOCKS_TAB, "terracotta_bricks_stairs", AtbywUtils.dyeColorNames(), WHITE_TERRACOTTA_BRICKS_STAIRS, ORANGE_TERRACOTTA_BRICKS_STAIRS, MAGENTA_TERRACOTTA_BRICKS_STAIRS, LIGHT_BLUE_TERRACOTTA_BRICKS_STAIRS, YELLOW_TERRACOTTA_BRICKS_STAIRS, LIME_TERRACOTTA_BRICKS_STAIRS, PINK_TERRACOTTA_BRICKS_STAIRS, GRAY_TERRACOTTA_BRICKS_STAIRS, LIGHT_GRAY_TERRACOTTA_BRICKS_STAIRS, CYAN_TERRACOTTA_BRICKS_STAIRS, PURPLE_TERRACOTTA_BRICKS_STAIRS, BLUE_TERRACOTTA_BRICKS_STAIRS, BROWN_TERRACOTTA_BRICKS_STAIRS, GREEN_TERRACOTTA_BRICKS_STAIRS, RED_TERRACOTTA_BRICKS_STAIRS, BLACK_TERRACOTTA_BRICKS_STAIRS);
         registerBlock( false, BLOCKS_TAB, "terracotta_bricks_slab", TERRACOTTA_BRICKS_SLAB);
-        registerBlocks(false, BLOCKS_TAB, "terracotta_bricks_slab", ColorNames.getNames(), WHITE_TERRACOTTA_BRICKS_SLAB, ORANGE_TERRACOTTA_BRICKS_SLAB, MAGENTA_TERRACOTTA_BRICKS_SLAB, LIGHT_BLUE_TERRACOTTA_BRICKS_SLAB, YELLOW_TERRACOTTA_BRICKS_SLAB, LIME_TERRACOTTA_BRICKS_SLAB, PINK_TERRACOTTA_BRICKS_SLAB, GRAY_TERRACOTTA_BRICKS_SLAB, LIGHT_GRAY_TERRACOTTA_BRICKS_SLAB, CYAN_TERRACOTTA_BRICKS_SLAB, PURPLE_TERRACOTTA_BRICKS_SLAB, BLUE_TERRACOTTA_BRICKS_SLAB, BROWN_TERRACOTTA_BRICKS_SLAB, GREEN_TERRACOTTA_BRICKS_SLAB, RED_TERRACOTTA_BRICKS_SLAB, BLACK_TERRACOTTA_BRICKS_SLAB);
-
-        registerBlocks(false, BLOCKS_TAB, "concrete_stairs", ColorNames.getNames(), WHITE_CONCRETE_STAIRS, ORANGE_CONCRETE_STAIRS, MAGENTA_CONCRETE_STAIRS, LIGHT_BLUE_CONCRETE_STAIRS, YELLOW_CONCRETE_STAIRS, LIME_CONCRETE_STAIRS, PINK_CONCRETE_STAIRS, GRAY_CONCRETE_STAIRS, LIGHT_GRAY_CONCRETE_STAIRS, CYAN_CONCRETE_STAIRS, PURPLE_CONCRETE_STAIRS, BLUE_CONCRETE_STAIRS, BROWN_CONCRETE_STAIRS, GREEN_CONCRETE_STAIRS, RED_CONCRETE_STAIRS, BLACK_CONCRETE_STAIRS);
-        registerBlocks(false, BLOCKS_TAB, "concrete_slab", ColorNames.getNames(), WHITE_CONCRETE_SLAB, ORANGE_CONCRETE_SLAB, MAGENTA_CONCRETE_SLAB, LIGHT_BLUE_CONCRETE_SLAB, YELLOW_CONCRETE_SLAB, LIME_CONCRETE_SLAB, PINK_CONCRETE_SLAB, GRAY_CONCRETE_SLAB, LIGHT_GRAY_CONCRETE_SLAB, CYAN_CONCRETE_SLAB, PURPLE_CONCRETE_SLAB, BLUE_CONCRETE_SLAB, BROWN_CONCRETE_SLAB, GREEN_CONCRETE_SLAB, RED_CONCRETE_SLAB, BLACK_CONCRETE_SLAB);
-        registerBlocks(false, BLOCKS_TAB, "cinder_bricks", ColorNames.getNames(), WHITE_CINDER_BLOCKS, ORANGE_CINDER_BLOCKS, MAGENTA_CINDER_BLOCKS, LIGHT_BLUE_CINDER_BLOCKS, YELLOW_CINDER_BLOCKS, LIME_CINDER_BLOCKS, PINK_CINDER_BLOCKS, GRAY_CINDER_BLOCKS, LIGHT_GRAY_CINDER_BLOCKS, CYAN_CINDER_BLOCKS, PURPLE_CINDER_BLOCKS, BLUE_CINDER_BLOCKS, BROWN_CINDER_BLOCKS, GREEN_CINDER_BLOCKS, RED_CINDER_BLOCKS, BLACK_CINDER_BLOCKS);
+        registerBlocks(false, BLOCKS_TAB, "terracotta_bricks_slab", AtbywUtils.dyeColorNames(), WHITE_TERRACOTTA_BRICKS_SLAB, ORANGE_TERRACOTTA_BRICKS_SLAB, MAGENTA_TERRACOTTA_BRICKS_SLAB, LIGHT_BLUE_TERRACOTTA_BRICKS_SLAB, YELLOW_TERRACOTTA_BRICKS_SLAB, LIME_TERRACOTTA_BRICKS_SLAB, PINK_TERRACOTTA_BRICKS_SLAB, GRAY_TERRACOTTA_BRICKS_SLAB, LIGHT_GRAY_TERRACOTTA_BRICKS_SLAB, CYAN_TERRACOTTA_BRICKS_SLAB, PURPLE_TERRACOTTA_BRICKS_SLAB, BLUE_TERRACOTTA_BRICKS_SLAB, BROWN_TERRACOTTA_BRICKS_SLAB, GREEN_TERRACOTTA_BRICKS_SLAB, RED_TERRACOTTA_BRICKS_SLAB, BLACK_TERRACOTTA_BRICKS_SLAB);
+        registerBlocks(false, BLOCKS_TAB, "concrete_stairs", AtbywUtils.dyeColorNames(), WHITE_CONCRETE_STAIRS, ORANGE_CONCRETE_STAIRS, MAGENTA_CONCRETE_STAIRS, LIGHT_BLUE_CONCRETE_STAIRS, YELLOW_CONCRETE_STAIRS, LIME_CONCRETE_STAIRS, PINK_CONCRETE_STAIRS, GRAY_CONCRETE_STAIRS, LIGHT_GRAY_CONCRETE_STAIRS, CYAN_CONCRETE_STAIRS, PURPLE_CONCRETE_STAIRS, BLUE_CONCRETE_STAIRS, BROWN_CONCRETE_STAIRS, GREEN_CONCRETE_STAIRS, RED_CONCRETE_STAIRS, BLACK_CONCRETE_STAIRS);
+        registerBlocks(false, BLOCKS_TAB, "concrete_slab", AtbywUtils.dyeColorNames(), WHITE_CONCRETE_SLAB, ORANGE_CONCRETE_SLAB, MAGENTA_CONCRETE_SLAB, LIGHT_BLUE_CONCRETE_SLAB, YELLOW_CONCRETE_SLAB, LIME_CONCRETE_SLAB, PINK_CONCRETE_SLAB, GRAY_CONCRETE_SLAB, LIGHT_GRAY_CONCRETE_SLAB, CYAN_CONCRETE_SLAB, PURPLE_CONCRETE_SLAB, BLUE_CONCRETE_SLAB, BROWN_CONCRETE_SLAB, GREEN_CONCRETE_SLAB, RED_CONCRETE_SLAB, BLACK_CONCRETE_SLAB);
+        registerBlocks(false, BLOCKS_TAB, "cinder_bricks", AtbywUtils.dyeColorNames(), WHITE_CINDER_BLOCKS, ORANGE_CINDER_BLOCKS, MAGENTA_CINDER_BLOCKS, LIGHT_BLUE_CINDER_BLOCKS, YELLOW_CINDER_BLOCKS, LIME_CINDER_BLOCKS, PINK_CINDER_BLOCKS, GRAY_CINDER_BLOCKS, LIGHT_GRAY_CINDER_BLOCKS, CYAN_CINDER_BLOCKS, PURPLE_CINDER_BLOCKS, BLUE_CINDER_BLOCKS, BROWN_CINDER_BLOCKS, GREEN_CINDER_BLOCKS, RED_CINDER_BLOCKS, BLACK_CINDER_BLOCKS);
 
         //ATBYW DECO
         registerBlock(false, DECO_TAB, "tinting_table", TINTING_TABLE);
+        registerCanvasBlock(DECO_TAB, "canvas_block", CANVAS_BLOCK);
+        registerCanvasBlock(DECO_TAB, "glowing_canvas_block", GLOWING_CANVAS_BLOCK);
         registerBlocks(false, DECO_TAB, "ladder", WoodNames.getNamesNoOak(), SPRUCE_LADDER, BIRCH_LADDER, JUNGLE_LADDER, ACACIA_LADDER, DARK_OAK_LADDER, CRIMSON_LADDER, WARPED_LADDER);
         registerBlock(false, DECO_TAB, "bamboo_ladder", BAMBOO_LADDER);
-
+        registerBlock(false, DECO_TAB, "cactus_ladder", CACTUS_LADDER);
+        registerBlock(false, DECO_TAB, "cactus_fence", CACTUS_FENCE);
+        registerSign(DECO_TAB, CACTUS_SIGN, CACTUS_WALL_SIGN);
         registerBlock(false, DECO_TAB, "compacted_snow", COMPACTED_SNOW);
-
         registerBlock(false, DECO_TAB, "large_chain", LARGE_CHAIN);
-
         registerBlock(false, DECO_TAB, "granite_column", GRANITE_COLUMN);
         registerBlock(false, DECO_TAB, "diorite_column", DIORITE_COLUMN);
         registerBlock(false, DECO_TAB, "andesite_column", ANDESITE_COLUMN);
@@ -657,12 +674,10 @@ public class AtbywBlocks {
         registerBlock(false, DECO_TAB, "quartz_column", QUARTZ_COLUMN);
         registerBlock(false, DECO_TAB, "prismarine_column", PRISMARINE_COLUMN);
         registerBlock(false, DECO_TAB, "blackstone_column", BLACKSTONE_COLUMN);
-
         registerBlock(false, "acacia_railing", ACACIA_RAILING);
-
         registerBlock(false, DECO_TAB, "terracotta_bricks_wall", TERRACOTTA_BRICKS_WALL);
-        registerBlocks(false, DECO_TAB, "terracotta_bricks_wall", ColorNames.getNames(), WHITE_TERRACOTTA_BRICKS_WALL, ORANGE_TERRACOTTA_BRICKS_WALL, MAGENTA_TERRACOTTA_BRICKS_WALL, LIGHT_BLUE_TERRACOTTA_BRICKS_WALL, YELLOW_TERRACOTTA_BRICKS_WALL, LIME_TERRACOTTA_BRICKS_WALL, PINK_TERRACOTTA_BRICKS_WALL, GRAY_TERRACOTTA_BRICKS_WALL, LIGHT_GRAY_TERRACOTTA_BRICKS_WALL, CYAN_TERRACOTTA_BRICKS_WALL, PURPLE_TERRACOTTA_BRICKS_WALL, BLUE_TERRACOTTA_BRICKS_WALL, BROWN_TERRACOTTA_BRICKS_WALL, GREEN_TERRACOTTA_BRICKS_WALL, RED_TERRACOTTA_BRICKS_WALL, BLACK_TERRACOTTA_BRICKS_WALL);
-        registerBlocks(false, DECO_TAB, "cinder_blocks_wall", ColorNames.getNames(), WHITE_CINDER_BLOCKS_WALL, ORANGE_CINDER_BLOCKS_WALL, MAGENTA_CINDER_BLOCKS_WALL, LIGHT_BLUE_CINDER_BLOCKS_WALL, YELLOW_CINDER_BLOCKS_WALL, LIME_CINDER_BLOCKS_WALL, PINK_CINDER_BLOCKS_WALL, GRAY_CINDER_BLOCKS_WALL, LIGHT_GRAY_CINDER_BLOCKS_WALL, CYAN_CINDER_BLOCKS_WALL, PURPLE_CINDER_BLOCKS_WALL, BLUE_CINDER_BLOCKS_WALL, BROWN_CINDER_BLOCKS_WALL, GREEN_CINDER_BLOCKS_WALL, RED_CINDER_BLOCKS_WALL, BLACK_CINDER_BLOCKS_WALL);
+        registerBlocks(false, DECO_TAB, "terracotta_bricks_wall", AtbywUtils.dyeColorNames(), WHITE_TERRACOTTA_BRICKS_WALL, ORANGE_TERRACOTTA_BRICKS_WALL, MAGENTA_TERRACOTTA_BRICKS_WALL, LIGHT_BLUE_TERRACOTTA_BRICKS_WALL, YELLOW_TERRACOTTA_BRICKS_WALL, LIME_TERRACOTTA_BRICKS_WALL, PINK_TERRACOTTA_BRICKS_WALL, GRAY_TERRACOTTA_BRICKS_WALL, LIGHT_GRAY_TERRACOTTA_BRICKS_WALL, CYAN_TERRACOTTA_BRICKS_WALL, PURPLE_TERRACOTTA_BRICKS_WALL, BLUE_TERRACOTTA_BRICKS_WALL, BROWN_TERRACOTTA_BRICKS_WALL, GREEN_TERRACOTTA_BRICKS_WALL, RED_TERRACOTTA_BRICKS_WALL, BLACK_TERRACOTTA_BRICKS_WALL);
+        registerBlocks(false, DECO_TAB, "cinder_blocks_wall", AtbywUtils.dyeColorNames(), WHITE_CINDER_BLOCKS_WALL, ORANGE_CINDER_BLOCKS_WALL, MAGENTA_CINDER_BLOCKS_WALL, LIGHT_BLUE_CINDER_BLOCKS_WALL, YELLOW_CINDER_BLOCKS_WALL, LIME_CINDER_BLOCKS_WALL, PINK_CINDER_BLOCKS_WALL, GRAY_CINDER_BLOCKS_WALL, LIGHT_GRAY_CINDER_BLOCKS_WALL, CYAN_CINDER_BLOCKS_WALL, PURPLE_CINDER_BLOCKS_WALL, BLUE_CINDER_BLOCKS_WALL, BROWN_CINDER_BLOCKS_WALL, GREEN_CINDER_BLOCKS_WALL, RED_CINDER_BLOCKS_WALL, BLACK_CINDER_BLOCKS_WALL);
 
         StatueRegistry.initStatues();
 
@@ -675,8 +690,6 @@ public class AtbywBlocks {
         registerBlockOnly("gold_spike_trap_spikes", GOLD_SPIKE_TRAP_SPIKES);
         registerBlockOnly("diamond_spike_trap_spikes", DIAMOND_SPIKE_TRAP_SPIKES);
         registerBlockOnly("netherite_spike_trap_spikes", NETHERITE_SPIKE_TRAP_SPIKES);
-        registerBlockOnly("canvas_block", CANVAS_BLOCK);
-        registerBlockOnly("glowing_canvas_block", GLOWING_CANVAS_BLOCK);
 
         LOGGER.info("ATBYW Blocks Inintiliazed");
     }

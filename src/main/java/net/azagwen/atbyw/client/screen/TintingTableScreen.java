@@ -10,7 +10,7 @@ import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.gui.widget.TextFieldWidget;
-import net.minecraft.client.render.GameRenderer;
+import net.minecraft.client.render.*;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
@@ -19,14 +19,15 @@ import net.minecraft.screen.ScreenHandlerListener;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Identifier;
-
-import java.awt.*;
+import org.lwjgl.glfw.GLFW;
 
 public class TintingTableScreen extends HandledScreen<TintingTableScreenHandler> implements ScreenHandlerListener {
     private static final Identifier TEXTURE = AtbywMain.id("textures/gui/tinting_table.png");
     private DynamicTexturedButtonWidget switchModeButton;
     private TextFieldWidget hexField;
     private boolean isHexCodeValid = false;
+    private float backAndForthDelta = 0.0F;
+    private boolean isDeltaReversed;
 
     public TintingTableScreen(TintingTableScreenHandler handler, PlayerInventory inventory, Text title) {
         super(handler, inventory, title);
@@ -38,6 +39,17 @@ public class TintingTableScreen extends HandledScreen<TintingTableScreenHandler>
 
     @Override
     protected void handledScreenTick() {
+        var step = 0.1F;
+        if (this.isDeltaReversed) {
+            this.backAndForthDelta = backAndForthDelta - step;
+        } else {
+            this.backAndForthDelta = backAndForthDelta + step;
+        }
+        if (this.backAndForthDelta >= 1) {
+            this.isDeltaReversed = true;
+        } else if (this.backAndForthDelta <= 0) {
+            this.isDeltaReversed = false;
+        }
         this.update();
         this.hexField.tick();
     }
@@ -45,14 +57,8 @@ public class TintingTableScreen extends HandledScreen<TintingTableScreenHandler>
     //Updates drawables that needs updating (called at init and in tick)
     private void update() {
         switch (this.handler.getMode()) {
-            case TintingTableMode.HEX -> {
-                this.switchModeButton.setU(242);
-                this.switchModeButton.setMessage(new TranslatableText("container.tinting_table_mode.hex"));
-            }
-            case TintingTableMode.RGB -> {
-                this.switchModeButton.setU(228);
-                this.switchModeButton.setMessage(new TranslatableText("container.tinting_table_mode.rgb"));
-            }
+            case TintingTableMode.HEX -> this.switchModeButton.setU(242);
+            case TintingTableMode.RGB -> this.switchModeButton.setU(228);
         }
 
         if (this.hexField.isVisible()) {
@@ -84,7 +90,7 @@ public class TintingTableScreen extends HandledScreen<TintingTableScreenHandler>
     protected void init() {
         super.init();
         this.client.keyboard.setRepeatEvents(true);
-        this.switchModeButton = this.addDrawableChild(new DynamicTexturedButtonWidget(this.x + 13, this.y + 30, 14, 14, 228, 0, 14, TEXTURE, 256, 256, (button) -> {
+        this.switchModeButton = this.addDrawableChild(new DynamicTexturedButtonWidget(this.x + 13, this.y + 30, 14, 14, (this.handler.getMode() == TintingTableMode.HEX ? 242 : 228), 0, 14, TEXTURE, 256, 256, (button) -> {
             AtbywNetworking.sendClientPacket(AtbywNetworking.TINTING_MODE_PACKET, () -> {
                 var buf = PacketByteBufs.create();
                 switch (this.handler.getMode()) {
@@ -94,6 +100,7 @@ public class TintingTableScreen extends HandledScreen<TintingTableScreenHandler>
                 return buf;
             });
         }));
+        this.switchModeButton.setMessage(new TranslatableText("container.tinting_table_mode"));
         this.hexField = new TextFieldWidget(this.textRenderer, this.x + 68, this.y + 34, 46 , 12, new TranslatableText("container.tinting.hex"));
         this.hexField.setFocusUnlocked(false);
         this.hexField.setEditableColor(Integer.decode("#CFBB93"));
@@ -104,7 +111,6 @@ public class TintingTableScreen extends HandledScreen<TintingTableScreenHandler>
         this.hexField.setText("#FFFFFF");
         this.addSelectableChild(this.hexField);
         this.setInitialFocus(this.hexField);
-        this.update();
     }
 
     @Override
@@ -122,7 +128,7 @@ public class TintingTableScreen extends HandledScreen<TintingTableScreenHandler>
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        if (keyCode == 256) {
+        if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
             this.client.player.closeHandledScreen();
         }
 
@@ -131,7 +137,7 @@ public class TintingTableScreen extends HandledScreen<TintingTableScreenHandler>
 
     @Override
     protected void drawForeground(MatrixStack matrices, int mouseX, int mouseY) {
-        this.textRenderer.draw(matrices, this.title, this.titleX, this.titleY, Color.decode("#51493A").getRGB());
+        this.textRenderer.draw(matrices, this.title, this.titleX, this.titleY, Integer.decode("#51493A"));
         this.textRenderer.draw(matrices, this.playerInventoryTitle, this.playerInventoryTitleX, this.playerInventoryTitleY, 4210752);
     }
 
@@ -159,9 +165,9 @@ public class TintingTableScreen extends HandledScreen<TintingTableScreenHandler>
         var redAmount = this.handler.getRedAmount();
         var greenAmount = this.handler.getGreenAmount();
         var blueAmount = this.handler.getBlueAmount();
-        this.renderDyeBar(matrices, xPos + 181, yPos, 244, redAmount);
-        this.renderDyeBar(matrices, xPos + 187, yPos, 248, greenAmount);
-        this.renderDyeBar(matrices, xPos + 193, yPos, 252, blueAmount);
+        this.renderDyeBar(matrices, xPos + 181, yPos, 244, redAmount, AtbywUtils.getRed(this.handler.getColor()));
+        this.renderDyeBar(matrices, xPos + 187, yPos, 248, greenAmount, AtbywUtils.getGreen(this.handler.getColor()));
+        this.renderDyeBar(matrices, xPos + 193, yPos, 252, blueAmount, AtbywUtils.getBlue(this.handler.getColor()));
 
         //Render the top left are background (settings area)
         switch (this.handler.getMode()) {
@@ -183,21 +189,31 @@ public class TintingTableScreen extends HandledScreen<TintingTableScreenHandler>
         }
 
         //Render the color widgets in the area mentioned above
-        var color = new Color(this.handler.getColor());
-        RenderSystem.setShaderColor((color.getRed() / 255.0F), (color.getGreen() / 255.0F), (color.getBlue() / 255.0F), 1.0F);
+        var color = this.handler.getColor();
+        RenderSystem.setShaderColor((AtbywUtils.getRed(color) / 255.0F), (AtbywUtils.getGreen(color) / 255.0F), (AtbywUtils.getBlue(color) / 255.0F), 1.0F);
         switch (this.handler.getMode()) {
-            case TintingTableMode.HEX -> this.drawTexture(matrices, xPos + 33, yPos + 30, 230, 28, 14, 14);
-            case TintingTableMode.RGB -> this.drawTexture(matrices, xPos + 33, yPos + 20, 230, 42, 14, 34);
+            case TintingTableMode.HEX -> this.drawTexture(matrices, xPos + 33, yPos + 30, 226, 28, 14, 14);
+            case TintingTableMode.RGB -> this.drawTexture(matrices, xPos + 33, yPos + 20, 226, 42, 14, 34);
         }
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
     }
 
-    private void renderDyeBar(MatrixStack matrices, int x, int y, int u, int amount) {
-        var height = Math.floor((amount * 1.02F) / 2.0F);
+    private void renderDyeBar(MatrixStack matrices, int x, int y, int u, int amount, int colorChannel) {
+        var height = (int) Math.floor(amount / 5.0F);
         var yOffset = (51 - height) + 14;
         if (amount > 0) {
-            this.drawTexture(matrices, x, y + (int) yOffset, u, 28, 4, (int) height);
+            this.drawTexture(matrices, x, (y + yOffset), u, 28, 4, height);
         }
+        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, (this.backAndForthDelta * 0.75F) + 0.25F);
+        RenderSystem.enableBlend();
+        var outputSlot = this.handler.slots.get(1);
+        if (outputSlot.hasStack()) {
+            var overlayHeight = this.handler.getDyeGaugeDecrement(colorChannel, outputSlot.getStack());
+            var adjustedHeight = (int) Math.ceil(overlayHeight / 5.0F);
+            this.drawTexture(matrices, x, (y + yOffset), 240, 28, 4, Math.min(adjustedHeight, height));
+        }
+        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+        RenderSystem.disableBlend();
     }
 
     @Override
